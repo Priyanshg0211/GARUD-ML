@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gunshot Detector</title>
+</head>
+<body>
+    <h1>Gunshot Detector</h1>
+    <input type="file" id="audioFile" accept="audio/*">
+    <button onclick="predict()">Detect</button>
+    <div id="result"></div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+numpy
+scipy
+matplotlib
+sounddevice
+pywt
+tensorflow
+librosa
+scikit-learn
+reportlab
+google-generativeai

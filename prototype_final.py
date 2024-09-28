@@ -10,6 +10,8 @@ import tensorflow as tf
 import librosa
 from sklearn.model_selection import train_test_split
 import sys
+import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # Parameters for simulation
 num_mics = 6  # Number of microphones
@@ -23,6 +25,10 @@ num_angles = 360  # Number of angles to test in beamforming
 # Define microphone positions in a circular array
 angles = np.linspace(0, 2 * np.pi, num_mics, endpoint=False)
 mic_positions = np.column_stack((np.cos(angles), np.sin(angles))) * mic_distance
+
+# Gemini API setup
+GOOGLE_API_KEY = "AIzaSyByVR9XKpvvWDzshhxUKidy3WFFaV--sio"
+genai.configure(api_key=GOOGLE_API_KEY)
 
 def record_audio(duration, sample_rate):
     """Record audio from the microphone."""
@@ -97,6 +103,49 @@ def classify_sound(model, audio_data):
     prediction = model.predict(features)
     return prediction[0][0]
 
+def gemini_analysis(audio_features, beamforming_result, classification_probability):
+    """Perform detailed analysis using Gemini AI."""
+    model = genai.GenerativeModel('gemini-pro')
+    
+    prompt = f"""
+    Analyze the following audio data:
+    
+    1. Audio Features (MFCC): {audio_features.tolist()}
+    2. Beamforming Result: Estimated direction {beamforming_result:.2f} degrees
+    3. Classification Probability (Gunshot): {classification_probability:.4f}
+    
+    Based on this data, provide a detailed analysis including:
+    1. Likely source of the sound
+    2. Confidence in the classification
+    3. Potential environmental factors affecting the recording
+    4. Recommendations for further analysis or action
+    
+    Please provide a comprehensive analysis in a clear, structured format.
+    """
+    
+    safety_settings = [
+        {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        }
+    ]
+    
+    response = model.generate_content(prompt, safety_settings=safety_settings)
+    
+    return response.text
+
 # Create directories for output files with a timestamp
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 base_dir = f'simulation_output_{timestamp}'
@@ -137,6 +186,14 @@ direction, beamformed_signals = weighted_delay_and_sum(recordings, mic_positions
 classification_probability = classify_sound(model, recorded_sound)
 print(f"Predicted probability of gunshot: {classification_probability:.4f}")
 
+# Extract features for Gemini analysis
+audio_features = extract_features(recorded_sound)
+
+# Perform Gemini analysis
+gemini_result = gemini_analysis(audio_features, direction, classification_probability)
+print("Gemini Analysis Result:")
+print(gemini_result)
+
 # Save results to files
 np.save(os.path.join(png_dir, 'beamformed_signals.npy'), beamformed_signals)
 
@@ -152,3 +209,9 @@ plt.show()
 
 # Print results
 print(f"Estimated Direction: {direction:.2f} degrees")
+
+# Save Gemini analysis to a text file
+with open(os.path.join(base_dir, 'gemini_analysis.txt'), 'w') as f:
+    f.write(gemini_result)
+
+print(f"Gemini analysis saved to {os.path.join(base_dir, 'gemini_analysis.txt')}")

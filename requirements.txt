@@ -1,11 +1,5 @@
 numpy
 scipy
 matplotlib
-sounddevice==0.4.6
-PyWavelets==1.1.1
-tensorflow
-librosa
-scikit-learn
-reportlab
-google-generativeai
-pytest
+sounddevice
+pandas  

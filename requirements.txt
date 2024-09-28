@@ -1,8 +1,8 @@
 numpy
 scipy
 matplotlib
-sounddevice
-pywt
+sounddevice==0.4.6
+PyWavelets==1.1.1
 tensorflow
 librosa
 scikit-learn
